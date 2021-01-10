@@ -9,3 +9,7 @@ pip install dash==1.14.0
 
 ## jupyter
 pip install jupyterlab
+pip install juptyertheme
+### commands
+- jt -t monokai
+- jupyter-notebook
