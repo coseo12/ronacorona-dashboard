@@ -17,6 +17,8 @@ stylesheets = [
 
 app = dash.Dash(__name__, external_stylesheets=stylesheets)
 
+server = app.server
+
 bubble_map = make_bubble_map(countries_df)
 
 bubble_map.update_layout(
@@ -116,5 +118,5 @@ def update_hello(value):
     return lines_graph
 
 
-if __name__ == '__main__':
-    app.run_server(debug=True)
+# if __name__ == '__main__':
+#     app.run_server(debug=True)
