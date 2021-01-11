@@ -1,56 +1,105 @@
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import plotly.express as px
 import pandas as pd
+from data import daily_totals_df, daily_countries_df
+from builders import make_table
 
-conditions = ["confirmed", "deaths", "recovered"]
+countries_df = daily_countries_df()
 
-def daily_totals_df():
-    daily_df = pd.read_csv("data/daily_report.csv")
-    totals_df = daily_df[["Confirmed", "Deaths", "Recovered"]].sum().reset_index(name="count")
-    totals_df = totals_df.rename(columns={"index": "condition"})
-    return totals_df
+stylesheets = [
+    "https://cdn.jsdelivr.net/npm/reset-css@5.0.1/reset.min.css",
+    "https://fonts.googleapis.com/css2?family=Open+Sans&display=swap"
+]
 
-def daily_countries_df():
-    daily_df = pd.read_csv("data/daily_report.csv")
-    countries_df = daily_df[["Country_Region", "Confirmed", "Deaths", "Recovered"]]
-    countries_df = countries_df.groupby("Country_Region").sum().reset_index()
-    return countries_df
+app = dash.Dash(__name__, external_stylesheets=stylesheets)
 
-def make_global_df():
-    def make_df(condition):
-        time_df = pd.read_csv(f"data/time_{condition}.csv")
-        time_df = time_df.drop(["Province/State", "Country/Region","Lat", "Long"], axis=1).sum().reset_index(name=condition)
-        time_df = time_df.rename(columns={"index": "date"})
-        return time_df
-    
-    final_df = None
+bubble_map = px.scatter_geo(
+    countries_df,
+    title="Confirmed By Country",
+    color="Confirmed",
+    color_continuous_scale=px.colors.sequential.Oryel,
+    size="Confirmed",
+    size_max=40,
+    template="plotly_dark",
+    hover_name="Country_Region",
+    hover_data={
+        "Confirmed": ":,2f",
+        "Deaths": ":,2f",
+        "Recovered": ":,2f",
+        "Country_Region": False
+    },
+    locations="Country_Region",
+    locationmode="country names")
 
-    for condition in conditions:
-        condition_df = make_df(condition)
-        if final_df is None:
-            final_df = condition_df
-        else:
-            final_df = final_df.merge(condition_df)
-    return final_df
-
-def make_country_df(country):
-    def make_df(condition):
-        time_df = pd.read_csv(f"data/time_{condition}.csv")
-        time_df = time_df.loc[time_df["Country/Region"] == country]
-        time_df = time_df.drop(columns=["Province/State", "Country/Region", "Lat", "Long"]).sum().reset_index(name=condition)
-        time_df = time_df.rename(columns={"index": "date"})
-        return time_df
-    final_df = None
-    for condition in conditions:
-        condition_df = make_df(condition)
-        if final_df is None:
-            final_df = condition_df
-        else:
-            final_df = final_df.merge(condition_df)
-    return final_df
+bubble_map.update_layout(
+    margin=dict(l=0, r=0, t=50, b=0)
+)
 
 totals_df = daily_totals_df()
-countries_df = daily_countries_df()
-global_df = make_global_df()
-country_df = make_country_df("Korea, South")
 
+bars_graph = px.bar(
+    totals_df,
+    x="condition",
+    y="count",
+    title="Total Global Cases",
+    template="plotly_dark",
+    hover_data={
+        "count": ":,",
+        "condition": False
+    },
+    labels={
+        "condition": "Condition",
+        "count": "Count",
+        "color": "Condition"
+    }
+)
 
-    
+bars_graph.update_traces(
+    marker_color=["#e74c3c", "#8e44ad", "#27ae60"]
+)
+
+app.layout = html.Div(
+    style={
+        "textAlign": "center",
+        "minHeight": "100vh",
+        "backgroundColor": "#111111",
+        "color": "white",
+        "fontFamily": "Open Sans, sans-serif"
+    },
+    children=[
+        html.Header(
+            style={"textAlign": "center",
+                   "paddingTop": "50px", "marginBottom": 100},
+            children=[html.H1("Corona Dashboard", style={"fontSize": 40})]
+        ),
+        html.Div(
+            style={"display": "grid", "gap": 50,
+                   "gridTemplateColumns": "repeat(4, 1fr)"},
+            children=[
+                html.Div(
+                    style={"grid-column": "span 3"},
+                    children=[
+                        dcc.Graph(id="bubble-map", figure=bubble_map)
+                    ]
+                ),
+                html.Div(
+                    children=[
+                        make_table(countries_df)
+                    ]
+                ),
+            ]
+        ),
+        html.Div(
+            style={"display": "grid", "gap": 50,
+                   "gridTemplateColumns": "repeat(4, 1fr)"},
+            children=[
+                dcc.Graph(id="bar-chart", figure=bars_graph)
+            ]
+        ),
+    ]
+)
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
