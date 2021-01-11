@@ -3,6 +3,11 @@ import pandas as pd
 conditions = ["confirmed", "deaths", "recovered"]
 
 
+def dropdown_options(df):
+    return df.sort_values("Country_Region").reset_index()[
+        "Country_Region"]
+
+
 def daily_totals_df():
     daily_df = pd.read_csv("data/daily_report.csv")
     totals_df = daily_df[["Confirmed", "Deaths",
