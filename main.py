@@ -17,6 +17,8 @@ stylesheets = [
 
 app = dash.Dash(__name__, external_stylesheets=stylesheets)
 
+app.title = "Corona Dashboard"
+
 server = app.server
 
 bubble_map = make_bubble_map(countries_df)
